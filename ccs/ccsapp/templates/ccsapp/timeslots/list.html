@@ -1,0 +1,48 @@
+{% extends 'ccsapp/base.html' %}
+{% block title %}Schedule — CCS{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Schedule</h1>
+  {% if user.role == 'admin' %}
+  <p><a href="{% url 'timeslot_create' %}" role="button">+ New timeslot</a></p>
+  {% endif %}
+</hgroup>
+
+{% if slots %}{# Admin view: list of Timeslot objects #}
+  {% for slot in slots %}
+  <article>
+    <hgroup>
+      <h3>
+        <a href="{% url 'timeslot_detail' slot.pk %}">
+          {{ slot.start|date:"D d M Y, H:i" }} – {{ slot.end|date:"H:i" }}
+        </a>
+        {% if slot.has_conflict %}<span class="conflict"> ⚠</span>{% endif %}
+      </h3>
+      <p>{{ slot.get_medium_display }}{% if slot.location %} · {{ slot.location }}{% endif %}</p>
+    </hgroup>
+  </article>
+  {% endfor %}
+
+{% elif activities %}{# User/CCT view: Activity objects with timeslot info #}
+  {% for act in activities %}
+  <article>
+    <hgroup>
+      <h3>
+        <a href="{% url 'timeslot_detail' act.timeslot.pk %}">
+          {{ act.timeslot.start|date:"D d M Y, H:i" }} – {{ act.timeslot.end|date:"H:i" }}
+        </a>
+      </h3>
+      <p>
+        {{ act.name }} · {{ act.timeslot.get_medium_display }}
+        {% if act.timeslot.location %} · {{ act.timeslot.location }}{% endif %}
+      </p>
+    </hgroup>
+    <span class="badge badge-{{ act.user_status }}">{{ act.get_user_status_display }}</span>
+  </article>
+  {% endfor %}
+
+{% else %}
+  <p style="color:var(--pico-muted-color)">No upcoming timeslots.</p>
+{% endif %}
+{% endblock %}

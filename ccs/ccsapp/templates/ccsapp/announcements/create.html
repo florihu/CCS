@@ -1,0 +1,28 @@
+{% extends 'ccsapp/base.html' %}
+{% block title %}Post announcement — CCS{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Post announcement</h1>
+</hgroup>
+
+<form method="post" novalidate style="max-width:560px">
+  {% csrf_token %}
+  {% for field in form %}
+  <label>
+    {{ field.label }}
+    {{ field }}
+    {% if field.help_text %}
+    <small style="color:var(--pico-muted-color)">{{ field.help_text }}</small>
+    {% endif %}
+    {% for error in field.errors %}
+    <small style="color:#d48282">{{ error }}</small>
+    {% endfor %}
+  </label>
+  {% endfor %}
+  <div style="display:flex; gap:1rem; margin-top:0.5rem">
+    <button type="submit">Post</button>
+    <a href="{% url 'announcement_list' %}" role="button" class="secondary outline">Cancel</a>
+  </div>
+</form>
+{% endblock %}

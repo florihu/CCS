@@ -1,0 +1,26 @@
+{% extends 'ccsapp/base.html' %}
+{% block title %}Profile — CCS{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Profile</h1>
+  <p style="color:var(--pico-muted-color)">{{ user.email }} · {{ user.get_role_display }}</p>
+</hgroup>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% for field in form %}
+  <label>
+    {{ field.label }}
+    {{ field }}
+    {% if field.help_text %}
+    <small style="color:var(--pico-muted-color)">{{ field.help_text }}</small>
+    {% endif %}
+    {% for error in field.errors %}
+    <small style="color:#d48282">{{ error }}</small>
+    {% endfor %}
+  </label>
+  {% endfor %}
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

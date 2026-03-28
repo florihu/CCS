@@ -1,0 +1,48 @@
+{% extends 'ccsapp/base.html' %}
+{% block title %}{{ task.title }} — CCS{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>{{ task.title }}</h1>
+  <p>
+    <span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
+    &nbsp;
+    <span class="pri-{{ task.priority }}">{{ task.get_priority_display }} priority</span>
+  </p>
+</hgroup>
+
+<article>
+  <p style="white-space:pre-wrap">{{ task.text }}</p>
+  {% if task.stored_in %}
+  <p><strong>Stored in:</strong> <code>{{ task.stored_in }}</code></p>
+  {% endif %}
+  <footer>
+    <small style="color:var(--pico-muted-color)">
+      Created by {{ task.author.name|default:task.author.email }}
+      on {{ task.created_at|date:"d M Y" }}
+      {% if task.worker %}
+        · Assigned to <strong>{{ task.worker.name|default:task.worker.email }}</strong>
+      {% else %}
+        · Not yet assigned
+      {% endif %}
+    </small>
+  </footer>
+</article>
+
+<section>
+  <h2>Update status</h2>
+  <form method="post" action="{% url 'task_status_update' task.pk %}"
+    style="display:flex; gap:0.75rem; flex-wrap:wrap">
+    {% csrf_token %}
+    {% for value, label in task.Status.choices %}
+    <button
+      name="status" value="{{ value }}" type="submit"
+      class="{% if task.status == value %}{% else %}secondary {% endif %}outline">
+      {{ label }}
+    </button>
+    {% endfor %}
+  </form>
+</section>
+
+<p style="margin-top:2rem"><a href="{% url 'task_list' %}">← Back to tasks</a></p>
+{% endblock %}
