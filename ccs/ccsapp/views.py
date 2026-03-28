@@ -71,7 +71,7 @@ def dashboard(request):
 
     ctx = {'announcements': active_announcements}
 
-    if request.user.role == User.Role.ADMIN:
+    if request.user.is_superuser or request.user.role == User.Role.ADMIN:
         ctx['upcoming_slots'] = (
             Timeslot.objects.filter(start__gte=now).order_by('start')[:5]
         )
@@ -99,7 +99,7 @@ def dashboard(request):
 @login_required
 def timeslot_list(request):
     now = timezone.now()
-    if request.user.role == User.Role.ADMIN:
+    if request.user.is_superuser or request.user.role == User.Role.ADMIN:
         slots = Timeslot.objects.filter(start__gte=now).order_by('start')
         return render(request, 'ccsapp/timeslots/list.html', {'slots': slots})
     activities = Activity.objects.filter(
@@ -132,7 +132,7 @@ def timeslot_create(request):
 def timeslot_detail(request, pk):
     slot = get_object_or_404(Timeslot, pk=pk)
 
-    if request.user.role == User.Role.ADMIN:
+    if request.user.is_superuser or request.user.role == User.Role.ADMIN:
         activity = None
         all_activities = slot.activities.select_related('proposed_to').all()
     else:
@@ -191,7 +191,7 @@ def announcement_create(request):
 def wiki_list(request):
     entries = WikiEntry.objects.select_related('author').order_by('-created_at')
     form = None
-    if request.user.role == User.Role.ADMIN:
+    if request.user.is_superuser or request.user.role == User.Role.ADMIN:
         form = WikiEntryForm(request.POST or None)
         if request.method == 'POST' and form.is_valid():
             entry = form.save(commit=False)

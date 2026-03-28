@@ -20,7 +20,7 @@
 </section>
 {% endif %}
 
-{% if user.role == 'admin' %}
+{% if user.is_superuser or user.role == 'admin' %}
 
   <section>
     <hgroup>
