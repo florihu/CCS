@@ -18,6 +18,10 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('ccsapp.urls')), # connects to the different applications
+    path('admin/',          admin.site.urls),
+    path('',                include('accounts.urls')),
+    path('schedule/',       include('schedule.urls')),
+    path('announcements/',  include('announcements.urls')),
+    path('wiki/',           include('wiki.urls')),
+    path('tasks/',          include('tasks.urls')),
 ]

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Schedule — CCS{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>Schedule</h1>
+  <p><a href="{% url 'schedule:create' %}" role="button">+ Propose a slot</a></p>
+</hgroup>
+
+{% if activities %}
+  {% for act in activities %}
+  <article>
+    <hgroup>
+      <h3>
+        <a href="{% url 'schedule:detail' act.timeslot.pk %}">{{ act.timeslot.start|date:"D d M Y, H:i" }} – {{ act.timeslot.end|date:"H:i" }}</a>
+        {% if act.timeslot.has_conflict %}<span class="conflict"> ⚠</span>{% endif %}
+      </h3>
+      <p>
+        {{ act.name }} · {{ act.timeslot.get_medium_display }}{% if act.timeslot.location %} · {{ act.timeslot.location }}{% endif %}
+        {% if user.is_superuser or user.role == 'admin' %}
+          · <span style="color:var(--pico-muted-color)">→ {{ act.proposed_to.name|default:act.proposed_to.email }}</span>
+        {% endif %}
+      </p>
+    </hgroup>
+    <span class="badge badge-{{ act.user_status }}">{{ act.get_user_status_display }}</span>
+  </article>
+  {% endfor %}
+{% else %}
+  <p style="color:var(--pico-muted-color)">No upcoming proposed slots.</p>
+{% endif %}
+{% endblock %}

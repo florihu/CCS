@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — CCS{% endblock %}
+{% block content %}
+<hgroup style="margin-bottom:2rem">
+  <h1>Hello, {{ user.name|default:"there" }}</h1>
+  <p style="color:var(--pico-muted-color)">{{ user.get_role_display }}</p>
+</hgroup>
+
+{% if announcements %}
+<section>
+  <h2>Latest news</h2>
+  {% for a in announcements %}
+  <article>
+    <header><strong>{{ a.title }}</strong><small> · {{ a.created_at|date:"d M Y" }}</small></header>
+    <p style="margin:0">{{ a.text|linebreaksbr }}</p>
+  </article>
+  {% endfor %}
+  <p><a href="{% url 'announcements:list' %}">All announcements →</a></p>
+</section>
+{% endif %}
+
+{% if user.is_superuser or user.role == 'admin' %}
+  <section>
+    <hgroup>
+      <h2>Upcoming slots</h2>
+      <p><a href="{% url 'schedule:create' %}" role="button">+ New timeslot</a></p>
+    </hgroup>
+    {% if upcoming_slots %}
+      {% for slot in upcoming_slots %}
+      <article>
+        <a href="{% url 'schedule:detail' slot.pk %}">{{ slot.start|date:"D d M, H:i" }}</a>
+        — {{ slot.get_medium_display }}
+        {% if slot.has_conflict %}<span class="conflict"> ⚠ conflict</span>{% endif %}
+      </article>
+      {% endfor %}
+      <p><a href="{% url 'schedule:list' %}">Full schedule →</a></p>
+    {% else %}
+      <p style="color:var(--pico-muted-color)">No upcoming timeslots.</p>
+    {% endif %}
+  </section>
+
+  {% if conflicted_slots %}
+  <section>
+    <h2 class="conflict">⚠ Conflicts to resolve</h2>
+    {% for slot in conflicted_slots %}
+    <article>
+      <a href="{% url 'schedule:detail' slot.pk %}">{{ slot.start|date:"D d M Y, H:i" }}</a>
+    </article>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if open_tasks %}
+  <section>
+    <hgroup>
+      <h2>Open tasks</h2>
+      <p><a href="{% url 'tasks:list' %}">All tasks →</a></p>
+    </hgroup>
+    {% for task in open_tasks %}
+    <article>
+      <a href="{% url 'tasks:detail' task.pk %}">{{ task.title }}</a>
+      &nbsp;<span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
+      <span class="pri-{{ task.priority }}"> · {{ task.get_priority_display }}</span>
+      {% if task.worker %}<small style="color:var(--pico-muted-color)"> · {{ task.worker.name|default:task.worker.email }}</small>{% endif %}
+    </article>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+{% else %}
+  <section>
+    <h2>Your upcoming slots</h2>
+    {% if my_slots %}
+      {% for act in my_slots %}
+      <article>
+        <a href="{% url 'schedule:detail' act.timeslot.pk %}">{{ act.timeslot.start|date:"D d M, H:i" }}</a>
+        — {{ act.name }}
+        &nbsp;<span class="badge badge-{{ act.user_status }}">{{ act.get_user_status_display }}</span>
+      </article>
+      {% endfor %}
+      <p><a href="{% url 'schedule:list' %}">Full schedule →</a></p>
+    {% else %}
+      <p style="color:var(--pico-muted-color)">No upcoming slots for you yet.</p>
+    {% endif %}
+  </section>
+
+  {% if user.role == 'cct' and my_tasks %}
+  <section>
+    <hgroup>
+      <h2>Your tasks</h2>
+      <p><a href="{% url 'tasks:list' %}">All tasks →</a></p>
+    </hgroup>
+    {% for task in my_tasks %}
+    <article>
+      <a href="{% url 'tasks:detail' task.pk %}">{{ task.title }}</a>
+      &nbsp;<span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
+    </article>
+    {% endfor %}
+  </section>
+  {% endif %}
+{% endif %}
+{% endblock %}

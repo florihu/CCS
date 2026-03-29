@@ -48,22 +48,23 @@ Each tutorial/resource is free.
 
 ## Work Packages Overview
 
-| # | Package                    | Hours | Sprints |
-| - | -------------------------- | ----- | ------- |
-| 1 | Environment Setup          | 6     | 1       |
-| 2 | Django & SQL Learning      | 18    | 3       |
-| 3 | Database Models            | 6     | 1       |
-| 4 | User Auth & Login          | 6     | 1       |
-| 5 | Invitation System          | 12    | 2       |
-| 6 | Email Setup (Brevo)        | 6     | 1       |
-| 7 | Timeslot CRUD              | 12    | 2       |
-| 8 | Activity Workflow          | 12    | 2       |
-| 9 | Conflict Detection         | 6     | 1       |
-| 10 | Announcements             | 6     | 1       |
-| 11 | Wiki                      | 6     | 1       |
-| 12 | Frontend & Design         | 12    | 2       |
-| 13 | Integration Testing       | 12    | 2       |
-|   | **Total**                 | **120** | **20** |
+| #  | Package                    | Hours   | Sprints |
+| -- | -------------------------- | ------- | ------- |
+| 1  | Environment Setup          | 6       | 1       |
+| 2  | Django & SQL Learning      | 18      | 3       |
+| 3  | Database Models            | 6       | 1       |
+| 4  | User Auth & Login          | 6       | 1       |
+| 5  | Invitation System          | 12      | 2       |
+| 6  | Email Setup (Brevo)        | 6       | 1       |
+| 7  | Timeslot CRUD              | 12      | 2       |
+| 8  | Activity Workflow          | 12      | 2       |
+| 9  | Conflict Detection         | 6       | 1       |
+| 10 | Announcements              | 6       | 1       |
+| 11 | Wiki                       | 6       | 1       |
+| 12 | CCT Role & Task Management | 8       | 1       |
+| 13 | Frontend & Design          | 12      | 2       |
+| 14 | Integration Testing        | 12      | 2       |
+|    | **Total**                  | **128** | **21**  |
 
 ---
 
@@ -276,7 +277,26 @@ Deliverable: Wiki page live with working add/delete for admin
 
 ---
 
-### Sprint 17–18 — Frontend & Design (Weeks 33–36)
+### Sprint 17 — CCT Role & Task Management (Weeks 33–34)
+
+**Goal:** Admins can create tasks and assign them to CCTs; CCTs can view and update task status.
+
+Tasks:
+
+- Add `CCT` as a third role on the User model (assigned by admin, behaves like User + task access)
+- Add `Task` model: title, text, author, status, priority, worker, stored_in, notify_on_status_change
+- Task views (Admin + CCT only): list, detail, create, status update
+- Dashboard shows open tasks for admin; assigned tasks for CCT
+- Role-based access decorator: `cct_or_admin_required`
+- Promote a user to CCT via Django admin (until a dedicated UI is built)
+
+Skills needed: Django role-based access, model choices, decorator pattern
+
+Deliverable: Admin creates a task, assigns it to a CCT, CCT updates the status
+
+---
+
+### Sprint 18–19 — Frontend & Design (Weeks 35–38)
 
 **Goal:** All pages look consistent, mobile-friendly, and relaxing to use.
 

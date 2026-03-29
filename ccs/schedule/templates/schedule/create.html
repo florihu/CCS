@@ -1,0 +1,515 @@
+{% extends 'base.html' %}
+{% block title %}New timeslot — CCS{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Calendar layout ─────────────────────────── */
+  #cal-wrap {
+    border: 1px solid var(--pico-border-color);
+    border-radius: var(--pico-border-radius);
+    overflow-x: auto;
+    margin-bottom: 0.75rem;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #cal-head {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--pico-card-background-color);
+    border-bottom: 1px solid var(--pico-border-color);
+  }
+  .tg-hdr { width: 44px; flex-shrink: 0; }
+  .dh {
+    flex: 1;
+    min-width: 48px;
+    padding: 0.35rem 0.2rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--pico-muted-color);
+    border-left: 1px solid var(--pico-border-color);
+  }
+  #cal-scroll { max-height: 480px; overflow-y: auto; }
+  #cal-body { display: flex; }
+
+  /* Time gutter */
+  .ctg { width: 44px; flex-shrink: 0; border-right: 1px solid var(--pico-border-color); }
+  .ctg-c {
+    height: 40px;
+    box-sizing: border-box;
+    padding: 2px 4px 0 0;
+    font-size: 0.7rem;
+    color: var(--pico-muted-color);
+    text-align: right;
+    line-height: 1;
+  }
+
+  /* Day columns */
+  .cdc {
+    flex: 1;
+    min-width: 48px;
+    border-left: 1px solid var(--pico-border-color);
+  }
+  .cs {
+    height: 40px;
+    box-sizing: border-box;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    cursor: crosshair;
+  }
+  .cs:nth-child(2n) { background: rgba(255,255,255,0.015); } /* half-hour stripe */
+  .cs:hover { background: rgba(122,173,204,0.1); }
+  .cs.sel   { background: rgba(122,173,204,0.25); }
+  .cs.sel-t {
+    border-top: 2px solid var(--pico-primary);
+    border-radius: 3px 3px 0 0;
+  }
+  .cs.sel-b {
+    border-bottom: 2px solid var(--pico-primary) !important;
+    border-radius: 0 0 3px 3px;
+  }
+  .cs.sel-t.sel-b { border-radius: 3px; }
+
+  /* ── Week tabs ───────────────────────────────── */
+  .wtabs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .wtab {
+    padding: 0.3em 0.85em;
+    font-size: 0.82rem;
+    min-height: unset;
+    border-radius: 2em;
+    border: 1px solid var(--pico-border-color);
+    background: transparent;
+    color: var(--pico-muted-color);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .wtab:hover { border-color: var(--pico-primary); color: var(--pico-primary); }
+  .wtab.active {
+    background: var(--pico-primary);
+    border-color: var(--pico-primary);
+    color: #0e1118;
+    font-weight: 600;
+  }
+
+  /* ── Selection display ───────────────────────── */
+  #sel-txt {
+    margin: 0.6rem 0 1.2rem;
+    font-size: 1.05rem;
+    min-height: 1.5rem;
+  }
+  #sel-txt.chosen { color: var(--pico-primary); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>New timeslot</h1>
+  <p style="color:var(--pico-muted-color)">Drag on the calendar to pick a time, then fill in the details.</p>
+</hgroup>
+
+<form method="post" novalidate id="ts-form">
+{% csrf_token %}
+
+{# Hidden datetime inputs — populated by the calendar JS #}
+<input type="hidden" name="start" id="id_start"
+  value="{{ form.start.value|default:'' }}">
+<input type="hidden" name="end"   id="id_end"
+  value="{{ form.end.value|default:'' }}">
+
+{# Server-side time errors #}
+{% if form.start.errors or form.end.errors %}
+<p style="color:#d48282; margin-bottom:0.5rem">
+  Please select a valid time on the calendar and try again.
+</p>
+{% endif %}
+
+{# Non-field errors (e.g. location validation) #}
+{% for err in form.non_field_errors %}
+<p style="color:#d48282; margin-bottom:0.5rem">{{ err }}</p>
+{% endfor %}
+
+{# ── Week tabs ── #}
+<div class="wtabs" id="wtabs-wrap">
+  <button type="button" class="wtab active" data-week="0"></button>
+  <button type="button" class="wtab"        data-week="1"></button>
+  <button type="button" class="wtab"        data-week="2"></button>
+  <button type="button" class="wtab"        data-week="3"></button>
+  <button type="button" class="wtab"        data-week="4"></button>
+</div>
+<p id="week-range" style="font-size:.85rem;color:var(--pico-muted-color);margin:-.35rem 0 .75rem"></p>
+
+{# ── Calendar grid (JS fills #cal-body) ── #}
+<div id="cal-wrap">
+  <div id="cal-head">
+    <div class="tg-hdr"></div>
+    <div class="dh" id="dh-0"></div>
+    <div class="dh" id="dh-1"></div>
+    <div class="dh" id="dh-2"></div>
+    <div class="dh" id="dh-3"></div>
+    <div class="dh" id="dh-4"></div>
+    <div class="dh" id="dh-5"></div>
+    <div class="dh" id="dh-6"></div>
+  </div>
+  <div id="cal-scroll">
+    <div id="cal-body"></div>
+  </div>
+</div>
+
+{# ── Selection summary ── #}
+<p id="sel-txt" style="color:var(--pico-muted-color)">
+  Drag to select a time
+</p>
+
+{# ── Form fields (visible once a time is chosen) ── #}
+<div id="form-pan" {% if not form.is_bound %}style="display:none"{% endif %}>
+  <hr style="margin: 0 0 1.25rem">
+
+  <label>
+    Activity
+    {{ form.activity_name }}
+    {% for e in form.activity_name.errors %}
+    <small style="color:#d48282">{{ e }}</small>{% endfor %}
+  </label>
+
+  <label>
+    Medium
+    {{ form.medium }}
+    {% for e in form.medium.errors %}
+    <small style="color:#d48282">{{ e }}</small>{% endfor %}
+  </label>
+
+  <div id="loc-wrap"
+    style="display:{% if form.is_bound and form.medium.value == 'in_person' %}block{% else %}none{% endif %}">
+    <label>
+      Location
+      {{ form.location }}
+      {% for e in form.location.errors %}
+      <small style="color:#d48282">{{ e }}</small>{% endfor %}
+    </label>
+  </div>
+
+  <label>
+    Notes <small style="color:var(--pico-muted-color)">(optional)</small>
+    {{ form.notes }}
+    {% for e in form.notes.errors %}
+    <small style="color:#d48282">{{ e }}</small>{% endfor %}
+  </label>
+
+  <label>
+    Propose to
+    {{ form.proposed_to }}
+    {% for e in form.proposed_to.errors %}
+    <small style="color:#d48282">{{ e }}</small>{% endfor %}
+  </label>
+
+  <div style="display:flex; gap:1rem; margin-top:0.75rem">
+    <button type="submit">Create timeslot</button>
+    <a href="{% url 'schedule:list' %}" role="button" class="secondary outline">Cancel</a>
+  </div>
+</div>
+
+</form>
+
+<script>
+(function () {
+  // ── Config ────────────────────────────────────────────────
+  var SLOT_MIN = 5;    // minutes per visual row (= snap granularity)
+  var SNAP_MIN = 5;    // snap granularity in minutes
+  var DAY_START = 7;   // 07:00
+  var DAY_END   = 22;  // 22:00
+  var SLOT_H    = 12;  // px per 5-min row
+  var SLOTS     = (DAY_END - DAY_START) * 60 / SLOT_MIN; // 180 rows
+
+  // ── State ─────────────────────────────────────────────────
+  var weekOff  = 0;
+  var dragging = false;
+  var dragCol  = -1;
+  var p0 = null;  // drag start  {row, snap}
+  var p1 = null;  // drag current {row, snap}
+
+  // ── DOM refs ──────────────────────────────────────────────
+  var inputS    = document.getElementById('id_start');
+  var inputE    = document.getElementById('id_end');
+  var selTxt    = document.getElementById('sel-txt');
+  var formPan   = document.getElementById('form-pan');
+  var calBody   = document.getElementById('cal-body');
+  var weekRange = document.getElementById('week-range');
+
+  // ── Date helpers ──────────────────────────────────────────
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function getMonday(off) {
+    var d = new Date();
+    d.setHours(0, 0, 0, 0);
+    var dow  = d.getDay();
+    var diff = dow === 0 ? -6 : 1 - dow;
+    d.setDate(d.getDate() + diff + off * 7);
+    return d;
+  }
+
+  function toDTLocal(d) {
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate())
+         + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  function dispDate(d) {
+    var DN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return DN[d.getDay()] + ' ' + d.getDate() + ' ' + MN[d.getMonth()];
+  }
+
+  function dispTime(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+
+  // Convert row+snap (minutes from DAY_START) to a Date for a given column
+  function toDate(col, minFromDayStart) {
+    var d = getMonday(weekOff);
+    d.setDate(d.getDate() + col);
+    var abs = DAY_START * 60 + minFromDayStart;
+    d.setHours(Math.floor(abs / 60), abs % 60, 0, 0);
+    return d;
+  }
+
+  // Each row IS a 5-min snap — offset within row is irrelevant
+  function snapFromY(_offsetY) { return 0; }
+
+  // ── Week label helpers ────────────────────────────────────
+  var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function weekLabel(off) {
+    var mon = getMonday(off);
+    var sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+    var mStr = mon.getDate() + ' ' + MN[mon.getMonth()];
+    var sStr = sun.getDate() + ' ' + MN[sun.getMonth()];
+    var yr   = sun.getFullYear();
+    if (mon.getMonth() === sun.getMonth()) {
+      return mon.getDate() + '–' + sun.getDate() + ' ' + MN[mon.getMonth()] + ' ' + yr;
+    }
+    return mStr + ' – ' + sStr + ' ' + yr;
+  }
+
+  function renderTabs() {
+    document.querySelectorAll('.wtab').forEach(function (btn) {
+      var off = parseInt(btn.dataset.week);
+      btn.textContent = weekLabel(off);
+    });
+    weekRange.textContent = weekLabel(weekOff);
+  }
+
+  // ── Build calendar grid ───────────────────────────────────
+  function buildGrid() {
+    calBody.innerHTML = '';
+
+    // Time gutter
+    var tg = document.createElement('div');
+    tg.className = 'ctg';
+    for (var s = 0; s < SLOTS; s++) {
+      var c   = document.createElement('div');
+      c.className = 'ctg-c';
+      var m   = s * SLOT_MIN;
+      c.textContent = (m % 60 === 0) ? pad(DAY_START + m / 60) + ':00' : '';
+      tg.appendChild(c);
+    }
+    calBody.appendChild(tg);
+
+    // Day columns
+    for (var col = 0; col < 7; col++) {
+      var dc = document.createElement('div');
+      dc.className = 'cdc';
+      for (var row = 0; row < SLOTS; row++) {
+        var sl = document.createElement('div');
+        sl.className = 'cs';
+        sl.dataset.col = col;
+        sl.dataset.row = row;
+        dc.appendChild(sl);
+      }
+      calBody.appendChild(dc);
+    }
+  }
+
+  // ── Render week day headers ───────────────────────────────
+  function renderHeaders() {
+    var DN  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    var mon = getMonday(weekOff);
+    for (var col = 0; col < 7; col++) {
+      var d  = new Date(mon);
+      d.setDate(d.getDate() + col);
+      var el = document.getElementById('dh-' + col);
+      if (el) el.textContent = DN[col] + ' ' + d.getDate();
+    }
+  }
+
+  // ── Highlight selected range ──────────────────────────────
+  function clearHighlight() {
+    calBody.querySelectorAll('.cs.sel').forEach(function(el) {
+      el.classList.remove('sel', 'sel-t', 'sel-b');
+    });
+  }
+
+  function highlight() {
+    clearHighlight();
+    if (!p0 || !p1 || dragCol < 0) return;
+    var r1 = Math.min(p0.row, p1.row);
+    var r2 = Math.max(p0.row, p1.row);
+    for (var r = r1; r <= r2; r++) {
+      var el = calBody.querySelector('.cs[data-col="' + dragCol + '"][data-row="' + r + '"]');
+      if (!el) continue;
+      el.classList.add('sel');
+      if (r === r1) el.classList.add('sel-t');
+      if (r === r2) el.classList.add('sel-b');
+    }
+  }
+
+  // ── Commit selection to form inputs ──────────────────────
+  function applySelection() {
+    if (!p0 || !p1) return;
+
+    var topPt = p0.row <= p1.row ? p0 : p1;
+    var botPt = p0.row <= p1.row ? p1 : p0;
+
+    var startMin = topPt.row * SLOT_MIN + topPt.snap;
+    var endMin   = botPt.row * SLOT_MIN + botPt.snap;
+
+    // Guarantee at least one 5-min slot
+    if (endMin <= startMin) endMin = startMin + SLOT_MIN;
+
+    var dtS = toDate(dragCol, startMin);
+    var dtE = toDate(dragCol, endMin);
+
+    inputS.value = toDTLocal(dtS);
+    inputE.value = toDTLocal(dtE);
+
+    selTxt.textContent = dispDate(dtS) + ' · ' + dispTime(dtS) + ' – ' + dispTime(dtE);
+    selTxt.classList.add('chosen');
+    formPan.style.display = '';
+  }
+
+  // ── Hit-test: which slot is under (clientX, clientY)? ────
+  function hitSlot(cx, cy) {
+    var el = document.elementFromPoint(cx, cy);
+    if (!el || !el.classList.contains('cs')) return null;
+    var rect = el.getBoundingClientRect();
+    return {
+      col:  parseInt(el.dataset.col),
+      row:  parseInt(el.dataset.row),
+      offY: cy - rect.top,
+    };
+  }
+
+  // ── Mouse drag ────────────────────────────────────────────
+  calBody.addEventListener('mousedown', function (e) {
+    var h = hitSlot(e.clientX, e.clientY);
+    if (!h) return;
+    e.preventDefault();
+    dragging = true;
+    dragCol  = h.col;
+    p0 = { row: h.row, snap: snapFromY(h.offY) };
+    p1 = { row: h.row, snap: p0.snap };
+    highlight();
+  });
+
+  document.addEventListener('mousemove', function (e) {
+    if (!dragging) return;
+    var h = hitSlot(e.clientX, e.clientY);
+    if (h && h.col === dragCol) {
+      p1 = { row: h.row, snap: snapFromY(h.offY) };
+      highlight();
+    }
+  });
+
+  document.addEventListener('mouseup', function () {
+    if (!dragging) return;
+    dragging = false;
+    applySelection();
+  });
+
+  // ── Touch drag ────────────────────────────────────────────
+  calBody.addEventListener('touchstart', function (e) {
+    var t = e.touches[0];
+    var h = hitSlot(t.clientX, t.clientY);
+    if (!h) return;
+    e.preventDefault();
+    dragging = true;
+    dragCol  = h.col;
+    p0 = { row: h.row, snap: snapFromY(h.offY) };
+    p1 = { row: h.row, snap: p0.snap };
+    highlight();
+  }, { passive: false });
+
+  document.addEventListener('touchmove', function (e) {
+    if (!dragging) return;
+    e.preventDefault();
+    var t = e.touches[0];
+    var h = hitSlot(t.clientX, t.clientY);
+    if (h && h.col === dragCol) {
+      p1 = { row: h.row, snap: snapFromY(h.offY) };
+      highlight();
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchend', function () {
+    if (!dragging) return;
+    dragging = false;
+    applySelection();
+  });
+
+  // ── Week tab switching ────────────────────────────────────
+  document.querySelectorAll('.wtab').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.wtab').forEach(function (b) {
+        b.classList.remove('active');
+      });
+      this.classList.add('active');
+      weekOff  = parseInt(this.dataset.week);
+      p0 = p1  = null;
+      dragCol  = -1;
+      inputS.value = '';
+      inputE.value = '';
+      selTxt.textContent = 'Drag to select a time';
+      selTxt.classList.remove('chosen');
+      formPan.style.display = 'none';
+      clearHighlight();
+      renderHeaders();
+      weekRange.textContent = weekLabel(weekOff);
+    });
+  });
+
+  // ── Medium → location visibility ─────────────────────────
+  var medSel = document.getElementById('id_medium');
+  var locWrap = document.getElementById('loc-wrap');
+
+  function toggleLocation() {
+    var show = medSel && medSel.value === 'in_person';
+    if (locWrap) {
+      locWrap.style.display = show ? '' : 'none';
+      var locInput = document.getElementById('id_location');
+      if (locInput) locInput.required = show;
+    }
+  }
+
+  if (medSel) {
+    medSel.addEventListener('change', toggleLocation);
+    toggleLocation();
+  }
+
+  // ── Restore state if returning from a failed POST ─────────
+  if (inputS.value && inputE.value) {
+    try {
+      var dtS = new Date(inputS.value);
+      var dtE = new Date(inputE.value);
+      selTxt.textContent = dispDate(dtS) + ' · ' + dispTime(dtS) + ' – ' + dispTime(dtE);
+      selTxt.classList.add('chosen');
+    } catch (err) { /* ignore parse errors */ }
+  }
+
+  // ── Init ──────────────────────────────────────────────────
+  buildGrid();
+  renderHeaders();
+  renderTabs();
+
+  // Scroll to 08:00 on load (12 rows × 12px = 144px from top of 07:00)
+  var scroll = document.getElementById('cal-scroll');
+  if (scroll) scroll.scrollTop = 12 * SLOT_H;
+
+})();
+</script>
+{% endblock %}

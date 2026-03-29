@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Tasks — CCS{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>Tasks</h1>
+  <p><a href="{% url 'tasks:create' %}" role="button">+ New task</a></p>
+</hgroup>
+{% if tasks %}
+<table role="grid">
+  <thead>
+    <tr><th>Task</th><th>Priority</th><th>Worker</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    {% for task in tasks %}
+    <tr>
+      <td><a href="{% url 'tasks:detail' task.pk %}">{{ task.title }}</a></td>
+      <td><span class="pri-{{ task.priority }}">{{ task.get_priority_display }}</span></td>
+      <td>{{ task.worker.name|default:task.worker.email|default:"—" }}</td>
+      <td><span class="badge badge-{{ task.status }}">{{ task.get_status_display }}</span></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color:var(--pico-muted-color)">No tasks yet.</p>
+{% endif %}
+{% endblock %}

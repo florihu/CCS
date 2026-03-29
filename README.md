@@ -19,13 +19,14 @@ Friends and caretakers can sign up to a shared schedule, keeping the load distri
 
 ## Roles
 
-| Role  | Description                                                                 |
-| ----- | --------------------------------------------------------------------------- |
-| Admin | Full control: invite users, manage timeslots, post announcements, edit wiki |
-| User  | Can view schedule, respond to slots, suggest activities                     |
+| Role                  | Description                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| Admin                 | Full control: invite users, manage timeslots, post announcements, edit wiki, tasks |
+| User                  | Can view schedule, respond to slots, suggest activities                            |
+| Core Care Taker (CCT) | Same as User, plus access to the task view. Assigned by Admin                      |
 
 Admins can grant admin rights to other users.
-
+Admins can promote any User to CCT (Core Care Taker) to grant task view access.
 ---
 
 ## Minimal Functionality
@@ -109,6 +110,9 @@ Password reset ("forgot password") is handled by Django's built-in auth views.
 
 ---
 
+ored_in
+
+
 ### 6. Email / Notification System
 
 #### Service: Brevo (formerly Sendinblue)
@@ -164,6 +168,13 @@ Emails are sent synchronously (during the HTTP request), which is simple and suf
 If the send fails, Django raises an exception — catch it and show the admin a warning rather than letting the page crash.
 
 ---
+
+### Task Management
+The role CCT is asigned by the admin for the user only CCTs can see the task view.
+
+The task view includes task description some necessary information and a point to the server where stuff inptut/output is stored. plus status of task and which of the CCTs does the task
+
+Task can be initiated by Admin OR CCT and CCT and Admin CAN be informed (if choosen in settings) if the status of a task changes
 
 ## Data Model
 
@@ -222,6 +233,18 @@ If the send fails, Django raises an exception — catch it and show the admin a 
 | expires_at | datetime (nullable) |                         |
 | is_active  | bool                |                         |
 | created_at | datetime            |                         |
+
+
+### Task
+
+id
+title
+text
+author
+status 
+priority
+worker
+stored_in
 
 ### WikiEntry
 

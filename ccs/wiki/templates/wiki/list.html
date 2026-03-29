@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Wiki — CCS{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>Wiki</h1>
+  <p style="color:var(--pico-muted-color)">Helpful links and resources.</p>
+</hgroup>
+{% if entries %}
+<table role="grid">
+  <tbody>
+    {% for entry in entries %}
+    <tr>
+      <td>
+        <a href="{{ entry.url }}" target="_blank" rel="noopener noreferrer">{{ entry.title }}</a>
+        <small style="color:var(--pico-muted-color)"> · {{ entry.created_at|date:"d M Y" }}</small>
+      </td>
+      {% if user.is_superuser or user.role == 'admin' %}
+      <td style="text-align:right;vertical-align:middle;width:1%">
+        <form method="post" action="{% url 'wiki:delete' entry.pk %}" style="margin:0">
+          {% csrf_token %}
+          <button type="submit" class="secondary outline"
+            style="padding:.25em .75em;font-size:.85rem;min-height:unset">Remove</button>
+        </form>
+      </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color:var(--pico-muted-color)">No links yet.</p>
+{% endif %}
+
+{% if form %}
+<hr style="margin:2rem 0">
+<h2>Add a link</h2>
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap">
+    {% for field in form %}
+    <label style="flex:1;min-width:200px;margin:0">
+      {{ field.label }}
+      {{ field }}
+      {% for e in field.errors %}<small style="color:#d48282">{{ e }}</small>{% endfor %}
+    </label>
+    {% endfor %}
+    <button type="submit" style="margin-bottom:.1rem">Add</button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

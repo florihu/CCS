@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Set up your account — CCS{% endblock %}
+{% block content %}
+<article style="max-width:400px;margin:4rem auto">
+  {% if expired %}
+  <hgroup>
+    <h1>Link expired</h1>
+    <p>This invite link is no longer valid. Please ask the admin to send a new one.</p>
+  </hgroup>
+  {% else %}
+  <hgroup>
+    <h1>Welcome to CCS</h1>
+    <p>Set your name and a password to activate your account.</p>
+  </hgroup>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% for field in form %}
+    <label>
+      {{ field.label }}
+      {{ field }}
+      {% for e in field.errors %}<small style="color:#d48282">{{ e }}</small>{% endfor %}
+    </label>
+    {% endfor %}
+    <button type="submit" style="width:100%;margin-top:.5rem">Activate account</button>
+  </form>
+  {% endif %}
+</article>
+{% endblock %}

@@ -37,7 +37,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'ccsapp'
+    # CCS modules
+    'accounts',
+    'schedule',
+    'announcements',
+    'wiki',
+    'tasks',
 ]
 
 MIDDLEWARE = [
@@ -55,7 +60,7 @@ ROOT_URLCONF = 'ccs.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],   # project-level base.html
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -123,7 +128,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Tell Django to use our custom User model instead of the built-in one
-AUTH_USER_MODEL = 'ccsapp.User'
+AUTH_USER_MODEL = 'accounts.User'
 
 # Auth redirects
 LOGIN_URL = '/login/'
